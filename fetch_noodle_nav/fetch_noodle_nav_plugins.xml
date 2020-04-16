@@ -1,0 +1,6 @@
+<library path="lib/libfetch_noodle_nav">
+  <class name="deviation_global_planner/DeviationGlobalPlanner" type="deviation_global_planner::DeviationGlobalPlanner" base_class_type="nav_core::BaseGlobalPlanner">
+  </class>
+  <class name="deviation_local_planner/DeviationLocalPlanner" type="deviation_local_planner::DeviationLocalPlanner" base_class_type="nav_core::BaseLocalPlanner">
+  </class>
+ </library>
