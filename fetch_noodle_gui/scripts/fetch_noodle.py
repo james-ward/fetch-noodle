@@ -47,7 +47,7 @@ class Gui:
 
     def welcome_cmd(self):
         # Play the welcome message
-        self.sound.voiceSound("Hello. I would like you to help me carry these pool noodles to the other side of the room.")
+        self.sound.say("Hello. I would like you to help me carry these pool noodles to the other side of the room.")
         self.welcome["state"] = DISABLED
         self.get_noodle["state"] = NORMAL
 
@@ -57,7 +57,7 @@ class Gui:
         # TODO Open the gripper
 
         # Play the request
-        self.sound.voiceSound("Please place the end of the pool noodle in my hand.")
+        self.sound.say("Please place the end of the pool noodle in my hand.")
         self.grab["state"] = NORMAL
 
     def grab_cmd(self):
@@ -70,7 +70,7 @@ class Gui:
     def run_cmd(self):
         self.get_noodle["state"] = DISABLED
         self.run["state"] = DISABLED
-        self.sound.voiceSound("Lets go!")
+        self.sound.say("Lets go!")
         self.cancel["state"] = NORMAL
         # TODO Run the nav stack
         self.release["state"] = NORMAL
@@ -78,7 +78,7 @@ class Gui:
 
     def release_cmd(self):
         # Play the thank you
-        self.sound.voiceSound("Thank you for your help. Please place the pool noodle in the pile.")
+        self.sound.say("Thank you for your help. Please place the pool noodle in the pile.")
 
         # TODO Open the gripper
         self.reset["state"] = NORMAL
@@ -90,7 +90,7 @@ class Gui:
         # TODO Face back towards start
 
         # Ask subject to follow
-        self.sound.voiceSound("")
+        self.sound.say("Please follow me back to the starting position.")
 
         # TODO Drive back to start position
 
@@ -102,7 +102,7 @@ class Gui:
         pass
 
 def main():
-    #rospy.init_node("noodle_gui", anonymous=True)
+    rospy.init_node("noodle_gui", anonymous=True)
     root = Tk()
     root.title ("Fetch Noodle")
 
