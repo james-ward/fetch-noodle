@@ -28,14 +28,16 @@ bool DeviationGlobalPlanner::makePlan(
   // TODO Read deviation parameters from the parameter server
   double amplitude = 0;
   int half_cycles = 0;
-  private_nh_.param("position/amplitude", amplitude, 1.0);
+  private_nh_.param("position/amplitude", amplitude, 0.5);
   private_nh_.param("position/half_cycles", half_cycles, 5);
 
   // Make a cubic Bezier curve for the path
   plan.push_back(start);
 
-  const double start_offset = 3;
-  const double goal_offset = 1;
+  double start_offset = 3;
+  double goal_offset = 2;
+  private_nh_.param("bezier_start_offset", start_offset, 3.0);
+  private_nh_.param("bezier_goal_offset", goal_offset, 2.0);
 
   const Point p0(start.pose.position.x, start.pose.position.y);
   const Point p3(goal.pose.position.x, goal.pose.position.y);
