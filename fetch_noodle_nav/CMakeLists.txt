@@ -125,6 +125,7 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/deviation_global_planner.cpp
+  src/deviation_local_planner.cpp
 )
 
 ## Add cmake target dependencies of the library
