@@ -24,4 +24,7 @@
     <arg name="yaw" value="3.14159" />
   </include>
 
+  <include file="$(find fetch_noodle_nav)/launch/fetch_noodle_nav.launch" />
+
+  <include file="$(find fetch_moveit_config)/launch/move_group.launch" />
 </launch>
