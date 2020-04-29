@@ -34,17 +34,25 @@ namespace deviation_local_planner {
       target.position.y += look_ahead_ * std::sin(bearing);
     }
 
-    auto remaining = norm(pose, target);
-    double scaling = std::max(0.1, std::min(1.0, remaining/stopping_distance_));
-    auto now = ros::Time::now();
-    double t = (start_time_ - now).toSec();
-    cmd_vel.linear.x = (speed_ - amplitude_ * sin(2.0*3.14159*t/period_)) * scaling;
-
     auto yaw = tf2::getYaw(pose.orientation);
     auto bearing = std::atan2(target.position.y - pose.position.y,
         target.position.x - pose.position.x);
     auto delta = bearing - yaw;
     delta = std::atan2(std::sin(delta), std::cos(delta));
+
+    if (aligning_ or d < goal_tolerance_ or current_target_ == plan_.size()-1) {
+      aligning_ = true;
+      // Do any fine alignment
+      cmd_vel.linear.x = 0.0;
+      cmd_vel.angular.z = delta * 0.5;  // Will set speed to take 2s to travel delta
+      return true;
+    }
+
+    double scaling = std::max(0.1, std::min(1.0, d/stopping_distance_));
+    auto now = ros::Time::now();
+    double t = (start_time_ - now).toSec();
+    cmd_vel.linear.x = (speed_ - amplitude_ * sin(2.0*3.14159*t/period_)) * scaling;
+
     cmd_vel.angular.z = delta / (look_ahead_/cmd_vel.linear.x);
 
     return true;
@@ -56,7 +64,11 @@ namespace deviation_local_planner {
       auto pose = p->pose;
       auto goal = plan_[plan_.size()-1].pose;
       double d = norm(pose, goal);
-      return d < goal_tolerance_;
+      auto delta = tf2::getYaw(goal.orientation) - tf2::getYaw(pose.orientation);
+      delta = std::atan2(std::sin(delta), std::cos(delta));
+
+      //return d < goal_tolerance_ and std::abs(delta) < 5.0/180.0*3.14159;
+      return aligning_ and std::abs(delta) < 5.0/180.0*3.14159;
     }
     return true;
   }
@@ -64,13 +76,14 @@ namespace deviation_local_planner {
   bool DeviationLocalPlanner::setPlan(const vector<PoseStamped>& plan) {
     plan_ = plan;
     is_running_ = false;
+    aligning_ = false;
     current_target_ = 0;
     private_nh_.param("speed/amplitude", amplitude_, 0.5);
     private_nh_.param("speed/period", period_, 5.0);
     private_nh_.param("speed/base_speed", speed_, 2.0);
     private_nh_.param("stopping_distance", stopping_distance_, 1.0);
     private_nh_.param("look_ahead", look_ahead_, 0.5);
-    private_nh_.param("goal_tolerance", goal_tolerance_, 0.2);
+    private_nh_.param("goal_tolerance", goal_tolerance_, 0.4);
     return true;
   }
 

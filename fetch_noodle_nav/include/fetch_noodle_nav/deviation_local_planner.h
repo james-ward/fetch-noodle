@@ -30,7 +30,7 @@ private:
   std::vector<geometry_msgs::PoseStamped> plan_;
   ros::NodeHandle private_nh_;
 
-  double goal_tolerance_ = 0.2;
+  double goal_tolerance_ = 0.4;
   double look_ahead_ = 0.5;
   double stopping_distance_ = 1.0;
   int current_target_ = 0;
@@ -39,6 +39,7 @@ private:
   double speed_ = 2.0;
   ros::Time start_time_;
   bool is_running_;
+  bool aligning_;
 };
 }
 

@@ -28,7 +28,7 @@ bool DeviationGlobalPlanner::makePlan(
   // TODO Read deviation parameters from the parameter server
   double amplitude = 0;
   int half_cycles = 0;
-  private_nh_.param("position/amplitude", amplitude, 0.5);
+  private_nh_.param("position/amplitude", amplitude, 0.15);
   private_nh_.param("position/half_cycles", half_cycles, 5);
 
   // Make a cubic Bezier curve for the path
