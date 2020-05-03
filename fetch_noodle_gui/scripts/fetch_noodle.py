@@ -1,23 +1,30 @@
 #!/usr/bin/env python
 
-import rospy
 from Tkinter import *
 import ttk
 
+from collections import OrderedDict
+
+import math
+
+import rospy
 import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, GripperCommandAction
 from control_msgs.msg import FollowJointTrajectoryGoal, GripperCommandGoal
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from moveit_python import MoveGroupInterface
 from sound_play.libsoundplay import SoundClient
-
+from tf.transformations import quaternion_from_euler
 
 class Actions:
     def __init__(self):
         self.arm = actionlib.SimpleActionClient("/arm_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
         self.gripper = actionlib.SimpleActionClient("/gripper_controller/gripper_action", GripperCommandAction)
+        self.move_base = actionlib.SimpleActionClient("/move_base", MoveBaseAction)
         self.arm.wait_for_server()
         self.gripper.wait_for_server()
+        self.move_base.wait_for_server()
 
         self.open_gripper = GripperCommandGoal()
         self.open_gripper.command.position = 1.0
@@ -33,25 +40,60 @@ class Actions:
         self.arm_down_pose.header.frame_id = "base_link"
         self.arm_down_pose.pose = Pose(Point(0.4, 0.0, 0.5), Quaternion(0,0,0,1))
 
+        self.home_backwards = MoveBaseGoal()
+        self.home_backwards.target_pose.header.frame_id = "map"
+        self.home_backwards.target_pose.header.stamp = rospy.Time.now()
+        quat_tf = quaternion_from_euler(0.0, 0.0, 3.14159)
+        self.home_backwards.target_pose.pose = Pose(Point(0.0, 0.0, 0.0),
+                Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
+
+        self.home = MoveBaseGoal()
+        self.home.target_pose.header.frame_id = "map"
+        self.home.target_pose.header.stamp = rospy.Time.now()
+        self.home.target_pose.pose = Pose(Point(0.0, 0.0, 0.0),
+                Quaternion(0.0, 0.0, 0.0, 1.0))
 
 class Gui:
     def __init__(self, master):
+        self.read_run_parameters()
+
         self.sound = SoundClient()
         self.actions = Actions()
 
         frame = Frame(master)
         frame.pack()
 
-        self.tree = ttk.Treeview(frame, columns=["run", "goal", "pos_ampl", "pos_half_cycles", "speed_base", "speed_ampl", "speed_period"], show="headings")
+        style = ttk.Style()
+        style.configure("Treeview.Heading", rowheight=145)
+
+        self.tree = ttk.Treeview(frame, selectmode="browse", columns=["run", "goal", "position_amplitude", "position_half_cycles", "speed_base", "speed_amplitude", "speed_period"], show="headings")
+
         self.tree.heading("run", text="Run")
         self.tree.heading("goal", text="Goal")
-        self.tree.heading("pos_ampl", text="Position amplitude (m)")
-        self.tree.heading("pos_half_cycles", text="Position half-cycles")
+        """self.tree.heading("position_amplitude", text="Position\namplitude\n(m)")
+        self.tree.heading("position_half_cycles", text="Position\nhalf-cycles")
+        self.tree.heading("speed_base", text="Speed\nbaseline\n(m/s)")
+        self.tree.heading("speed_amplitude", text="Speed\namplitude\n(m/s)")
+        self.tree.heading("speed_period", text="Speed\nperiod\n(s)")
+        """
+        self.tree.heading("position_amplitude", text="Position amplitude (m)")
+        self.tree.heading("position_half_cycles", text="Position half-cycles")
         self.tree.heading("speed_base", text="Speed baseline (m/s)")
-        self.tree.heading("speed_ampl", text="Speed amplitude (m/s)")
+        self.tree.heading("speed_amplitude", text="Speed amplitude (m/s)")
         self.tree.heading("speed_period", text="Speed period (s)")
+        widths = [45,65,230,200,230,230,190]
+        for col in range(7):
+            self.tree.column(col, stretch=True, width=widths[col])
+
+
+        for idx, run in self.runs.items():
+            self.tree.insert("", "end", iid=idx, values = [idx, run['goal']['name'], run['position_amplitude'], run['position_half_cycles'],
+                run['speed_baseline'], run['speed_amplitude'], run['speed_period']])
+        self.tree.focus(0)
+        self.tree.selection_set(0)
 
         self.tree.grid(row=0, column=0, columnspan=2)
+
 
         self.welcome = Button(frame, text="Play welcome message", command=self.welcome_cmd)
         self.welcome.grid(row=1, column=0)
@@ -73,6 +115,30 @@ class Gui:
 
         self.cancel = Button(frame, text="Stop", state=DISABLED, command=self.cancel_cmd)
         self.cancel.grid(row=1, column=1, rowspan=6)
+
+    def read_run_parameters(self):
+        run_number = 0
+        runs = {}
+        while True:
+            if rospy.has_param("/fetch_noodle/runs/" + str(run_number)):
+                prefix = "/fetch_noodle/runs/"+str(run_number)+"/"
+                run = {"goal": {
+                                "name":rospy.get_param(prefix+"goal/name"),
+                                "x":rospy.get_param(prefix+"goal/x"),
+                                "y":rospy.get_param(prefix+"goal/y"),
+                                "heading":rospy.get_param(prefix+"goal/heading")},
+                        "position_amplitude": rospy.get_param(prefix+"position_amplitude"),
+                        "position_half_cycles": rospy.get_param(prefix+"position_half_cycles"),
+                        "speed_baseline": rospy.get_param(prefix+"speed_baseline"),
+                        "speed_amplitude":rospy.get_param(prefix+"speed_amplitude"),
+                        "speed_period":rospy.get_param(prefix+"speed_period")
+                        }
+                runs[str(run_number)] = run
+                run_number += 1
+            else:
+                break
+        self.runs = OrderedDict(sorted(runs.items()))
+
 
     def welcome_cmd(self):
         # Play the welcome message
@@ -105,7 +171,24 @@ class Gui:
         self.get_noodle["state"] = DISABLED
         self.sound.say("Lets go!")
         self.cancel["state"] = NORMAL
-        # TODO Run the nav stack
+        # Run the nav stack
+        # First read the parameters for this run and set them on the parameter server
+        parameters = self.runs[self.tree.focus()]
+        rospy.set_param("/move_base/DeviationGlobalPlanner/position/amplitude", parameters["position_amplitude"])
+        rospy.set_param("/move_base/DeviationGlobalPlanner/position/half_cycles", parameters["position_half_cycles"])
+        rospy.set_param("/move_base/DeviationLocalPlanner/speed/baseline", parameters["speed_baseline"])
+        rospy.set_param("/move_base/DeviationLocalPlanner/speed/amplitude", parameters["speed_amplitude"])
+        rospy.set_param("/move_base/DeviationLocalPlanner/speed/period", parameters["speed_period"])
+
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now()
+        quat_tf = quaternion_from_euler(0.0, 0.0, parameters["goal"]["heading"])
+        goal.target_pose.pose = Pose(Point(parameters["goal"]["x"], parameters["goal"]["y"], 0.0),
+                Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
+        self.current_goal = goal.target_pose.pose
+        self.actions.move_base.send_goal_and_wait(goal)
+
         self.release["state"] = NORMAL
         self.cancel["state"] = DISABLED
 
@@ -122,14 +205,36 @@ class Gui:
     def reset_cmd(self):
         self.reset["state"] = DISABLED
         self.cancel["state"] = NORMAL
-        # TODO Face back towards start
+        # Remove any deviations for straight driving
+        rospy.set_param("/move_base/DeviationGlobalPlanner/position/amplitude", 0.0)
+        # TODO set the return speed. For now, use the previous baseline
+        # rospy.set_param("/move_base/DeviationLocalPlanner/speed/baseline", parameters["speed_baseline"])
+        rospy.set_param("/move_base/DeviationLocalPlanner/speed/amplitude", 0.0)
+
+        # Face back towards start
+        goal = MoveBaseGoal()
+        goal.target_pose.header.frame_id = "map"
+        goal.target_pose.header.stamp = rospy.Time.now()
+        bearing = math.atan2(-self.current_goal.position.y, -self.current_goal.position.y)
+        quat_tf = quaternion_from_euler(0.0, 0.0, bearing)
+        goal.target_pose.pose = Pose(self.current_goal.position,
+                Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
+        self.actions.move_base.send_goal_and_wait(goal)
 
         # Ask subject to follow
         self.sound.say("Please follow me back to the starting position.")
 
-        # TODO Drive back to start position
+        # Drive back to start position
+        self.actions.move_base.send_goal_and_wait(self.actions.home_backwards)
 
-        # TODO Rotate back to starting orientation
+        # Rotate back to starting orientation
+        self.actions.move_base.send_goal_and_wait(self.actions.home)
+
+        # Select the next run in the list
+        run_id = int(self.tree.focus())
+        if run_id < len(self.runs):
+            self.tree.focus(run_id+1)
+            self.tree.selection_set(run_id+1)
         self.cancel["state"] = DISABLED
         self.get_noodle["state"] = NORMAL
 
@@ -140,6 +245,7 @@ def main():
     rospy.init_node("noodle_gui", anonymous=True)
     root = Tk()
     root.title ("Fetch Noodle")
+    #root.geometry("1200x200")
 
     gui = Gui(root)
 
