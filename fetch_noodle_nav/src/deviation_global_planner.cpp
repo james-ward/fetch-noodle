@@ -31,13 +31,23 @@ bool DeviationGlobalPlanner::makePlan(
   private_nh_.param("position/amplitude", amplitude, 0.15);
   private_nh_.param("position/half_cycles", half_cycles, 5);
 
-  // Make a cubic Bezier curve for the path
-  plan.push_back(start);
-
   double start_offset = 3;
   double goal_offset = 2;
   private_nh_.param("bezier_start_offset", start_offset, 3.0);
   private_nh_.param("bezier_goal_offset", goal_offset, 2.0);
+
+  // Make a cubic Bezier curve for the path
+  plan.push_back(start);
+  if (std::hypot(start.pose.position.x - goal.pose.position.x,
+        start.pose.position.y - goal.pose.position.y) < goal_offset) {
+    // Don't create a curve if this is a spot turn
+    ROS_INFO("Creating plan for spot turn");
+    plan.push_back(goal);
+    return true;
+  }
+
+  ROS_INFO_STREAM("Creating plan with " << amplitude << "m amplitude and " << half_cycles << " half cycles");
+
 
   const Point p0(start.pose.position.x, start.pose.position.y);
   const Point p3(goal.pose.position.x, goal.pose.position.y);
