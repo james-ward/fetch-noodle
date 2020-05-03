@@ -43,8 +43,11 @@ namespace deviation_local_planner {
     if (aligning_ or d < goal_tolerance_ or current_target_ == plan_.size()-1) {
       aligning_ = true;
       // Do any fine alignment
+      auto delta = tf2::getYaw(target.orientation) - yaw;
+      delta = std::atan2(std::sin(delta), std::cos(delta));
       cmd_vel.linear.x = 0.0;
-      cmd_vel.angular.z = delta * 0.5;  // Will set speed to take 2s to travel delta
+      cmd_vel.angular.z = delta * 2.0;
+      ROS_INFO_STREAM_THROTTLE(0.5, "Aligning with goal orientation. Error " << delta << "rad");
       return true;
     }
 
@@ -84,6 +87,7 @@ namespace deviation_local_planner {
     private_nh_.param("stopping_distance", stopping_distance_, 1.0);
     private_nh_.param("look_ahead", look_ahead_, 0.5);
     private_nh_.param("goal_tolerance", goal_tolerance_, 0.4);
+    ROS_INFO_STREAM("Executing path with " << speed_ << "m/s base speed, " << amplitude_ << "m/s amplitude, " << period_ << "s period");
     return true;
   }
 
