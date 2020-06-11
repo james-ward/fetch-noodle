@@ -9,6 +9,7 @@ import math
 
 import rospy
 import actionlib
+from actionlib_msgs.msg import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, GripperCommandAction
 from control_msgs.msg import FollowJointTrajectoryGoal, GripperCommandGoal
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
@@ -55,6 +56,7 @@ class Actions:
 
 class Gui:
     def __init__(self, master):
+        self.needs_alignment = False
         self.read_run_parameters()
 
         self.sound = SoundClient()
@@ -70,12 +72,6 @@ class Gui:
 
         self.tree.heading("run", text="Run")
         self.tree.heading("goal", text="Goal")
-        """self.tree.heading("position_amplitude", text="Position\namplitude\n(m)")
-        self.tree.heading("position_half_cycles", text="Position\nhalf-cycles")
-        self.tree.heading("speed_base", text="Speed\nbaseline\n(m/s)")
-        self.tree.heading("speed_amplitude", text="Speed\namplitude\n(m/s)")
-        self.tree.heading("speed_period", text="Speed\nperiod\n(s)")
-        """
         self.tree.heading("position_amplitude", text="Position amplitude (m)")
         self.tree.heading("position_half_cycles", text="Position half-cycles")
         self.tree.heading("speed_base", text="Speed baseline (m/s)")
@@ -187,15 +183,23 @@ class Gui:
         goal.target_pose.pose = Pose(Point(parameters["goal"]["x"], parameters["goal"]["y"], 0.0),
                 Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
         self.current_goal = goal.target_pose.pose
-        self.actions.move_base.send_goal_and_wait(goal)
 
-        self.release["state"] = NORMAL
-        self.cancel["state"] = DISABLED
+        def at_goal(status, result):
+            self.successful_goal = status == GoalStatus.SUCCEEDED
+
+            self.release["state"] = NORMAL
+            self.cancel["state"] = DISABLED
+        def feedback(fb):
+            self.current_pose = fb.base_position.pose
+        self.actions.move_base.send_goal(goal, done_cb = at_goal, feedback_cb = feedback)
 
     def release_cmd(self):
         self.release["state"] = DISABLED
-        # Play the thank you
-        self.sound.say("Thank you for your help. Please place the pool noodle in the pile.")
+        if self.successful_goal:
+            # Play the thank you if we made it to the goal without an abort
+            self.sound.say("Thank you for your help. Please place the pool noodle in the pile.")
+        else:
+            self.sound.say("That didn't work. Lets try again.")
 
         self.actions.gripper.send_goal_and_wait(self.actions.open_gripper)
         self.actions.arm_down_pose.header.stamp = rospy.Time.now()
@@ -208,38 +212,49 @@ class Gui:
         # Remove any deviations for straight driving
         rospy.set_param("/move_base/DeviationGlobalPlanner/position/amplitude", 0.0)
         # TODO set the return speed. For now, use the previous baseline
-        # rospy.set_param("/move_base/DeviationLocalPlanner/speed/baseline", parameters["speed_baseline"])
         rospy.set_param("/move_base/DeviationLocalPlanner/speed/amplitude", 0.0)
 
         # Face back towards start
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
-        bearing = math.atan2(-self.current_goal.position.y, -self.current_goal.position.y)
+        # Get current position (might not be goal if we abort)
+        bearing = math.atan2(-self.current_pose.position.y, -self.current_pose.position.x)
         quat_tf = quaternion_from_euler(0.0, 0.0, bearing)
-        goal.target_pose.pose = Pose(self.current_goal.position,
+        goal.target_pose.pose = Pose(self.current_pose.position,
                 Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
         self.actions.move_base.send_goal_and_wait(goal)
 
         # Ask subject to follow
         self.sound.say("Please follow me back to the starting position.")
 
+        def spot_turn(status, result):
+            if status != GoalStatus.SUCCEEDED:
+                self.cancel["state"] = DISABLED
+                self.reset["state"] = NORMAL
+            else:
+                self.needs_alignment = True
+                # Select the next run in the list
+                run_id = int(self.tree.focus())
+                if run_id < len(self.runs) - 1 and self.successful_goal:
+                    self.tree.focus(run_id+1)
+                    self.tree.selection_set(run_id+1)
+                self.cancel["state"] = DISABLED
+                self.get_noodle["state"] = NORMAL
+        def feedback(fb):
+            self.current_pose = fb.base_position.pose
         # Drive back to start position
-        self.actions.move_base.send_goal_and_wait(self.actions.home_backwards)
+        self.actions.move_base.send_goal(self.actions.home_backwards, done_cb = spot_turn, feedback_cb = feedback)
 
+    def align_to_zero(self):
+        self.needs_alignment = False
         # Rotate back to starting orientation
         self.actions.move_base.send_goal_and_wait(self.actions.home)
 
-        # Select the next run in the list
-        run_id = int(self.tree.focus())
-        if run_id < len(self.runs):
-            self.tree.focus(run_id+1)
-            self.tree.selection_set(run_id+1)
-        self.cancel["state"] = DISABLED
-        self.get_noodle["state"] = NORMAL
+
 
     def cancel_cmd(self):
-        pass
+        self.actions.move_base.cancel_goal()
 
 def main():
     rospy.init_node("noodle_gui", anonymous=True)
@@ -249,6 +264,12 @@ def main():
 
     gui = Gui(root)
 
+    def check():
+        if gui.needs_alignment:
+            gui.align_to_zero()
+        root.after(100, check)
+
+    root.after(100, check)
     root.mainloop()
 
 
