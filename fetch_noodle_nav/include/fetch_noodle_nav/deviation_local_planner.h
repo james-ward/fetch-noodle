@@ -21,12 +21,12 @@ public:
   bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
   bool isGoalReached();
   bool setPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
-  void initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros);
+  void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros);
 
 private:
-  std::optional<geometry_msgs::PoseStamped> get_pose();
+  geometry_msgs::PoseStamped get_pose();
 
-  tf2_ros::Buffer* tf_;
+  tf::TransformListener* tf_;
   std::vector<geometry_msgs::PoseStamped> plan_;
   ros::NodeHandle private_nh_;
 

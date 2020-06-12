@@ -6,8 +6,6 @@
 using geometry_msgs::Pose;
 using geometry_msgs::PoseStamped;
 using geometry_msgs::Twist;
-using std::nullopt;
-using std::optional;
 using std::vector;
 
 namespace deviation_local_planner {
@@ -17,10 +15,7 @@ namespace deviation_local_planner {
       start_time_ = ros::Time::now();
     }
     auto p = get_pose();
-    if (!p) {
-      return false;
-    }
-    auto pose = p->pose;
+    auto pose = p.pose;
     double d = norm(pose, plan_[current_target_].pose);
     while (d < look_ahead_ && current_target_ < plan_.size() - 1) {
       current_target_++;
@@ -63,17 +58,14 @@ namespace deviation_local_planner {
 
   bool DeviationLocalPlanner::isGoalReached() {
     auto p = get_pose();
-    if (p) {
-      auto pose = p->pose;
-      auto goal = plan_[plan_.size()-1].pose;
-      double d = norm(pose, goal);
-      auto delta = tf2::getYaw(goal.orientation) - tf2::getYaw(pose.orientation);
-      delta = std::atan2(std::sin(delta), std::cos(delta));
+    auto pose = p.pose;
+    auto goal = plan_[plan_.size()-1].pose;
+    double d = norm(pose, goal);
+    auto delta = tf2::getYaw(goal.orientation) - tf2::getYaw(pose.orientation);
+    delta = std::atan2(std::sin(delta), std::cos(delta));
 
-      //return d < goal_tolerance_ and std::abs(delta) < 5.0/180.0*3.14159;
-      return aligning_ and std::abs(delta) < 5.0/180.0*3.14159;
-    }
-    return true;
+    //return d < goal_tolerance_ and std::abs(delta) < 5.0/180.0*3.14159;
+    return aligning_ and std::abs(delta) < 5.0/180.0*3.14159;
   }
 
   bool DeviationLocalPlanner::setPlan(const vector<PoseStamped>& plan) {
@@ -91,12 +83,12 @@ namespace deviation_local_planner {
     return true;
   }
 
-  void DeviationLocalPlanner::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros) {
+  void DeviationLocalPlanner::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) {
     tf_ = tf;
     private_nh_ = ros::NodeHandle("~/" + name);
   }
 
-  optional<PoseStamped> DeviationLocalPlanner::get_pose() {
+  PoseStamped DeviationLocalPlanner::get_pose() {
     PoseStamped global_pose, robot_pose;
     tf2::toMsg(tf2::Transform::getIdentity(), global_pose.pose);
     tf2::toMsg(tf2::Transform::getIdentity(), robot_pose.pose);
@@ -107,22 +99,19 @@ namespace deviation_local_planner {
     // get the global pose of the robot
     try
     {
-      tf_->transform(robot_pose, global_pose, plan_[0].header.frame_id);
+      tf_->transformPose(plan_[0].header.frame_id, robot_pose, global_pose);
     }
     catch (tf2::LookupException& ex)
     {
       ROS_ERROR_THROTTLE(1.0, "No Transform available Error looking up robot pose: %s\n", ex.what());
-      return nullopt;
     }
     catch (tf2::ConnectivityException& ex)
     {
       ROS_ERROR_THROTTLE(1.0, "Connectivity Error looking up robot pose: %s\n", ex.what());
-      return nullopt;
     }
     catch (tf2::ExtrapolationException& ex)
     {
       ROS_ERROR_THROTTLE(1.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
-      return nullopt;
     }
 
     return global_pose;
