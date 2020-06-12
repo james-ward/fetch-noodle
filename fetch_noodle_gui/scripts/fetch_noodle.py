@@ -44,15 +44,16 @@ class Actions:
         self.home_backwards = MoveBaseGoal()
         self.home_backwards.target_pose.header.frame_id = "map"
         self.home_backwards.target_pose.header.stamp = rospy.Time.now()
-        quat_tf = quaternion_from_euler(0.0, 0.0, 3.14159)
-        self.home_backwards.target_pose.pose = Pose(Point(0.0, 0.0, 0.0),
+        quat_tf = quaternion_from_euler(0.0, 0.0, 0.0)
+        self.home_backwards.target_pose.pose = Pose(Point(self.origin_x, self.origin_y, 0.0),
                 Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
 
         self.home = MoveBaseGoal()
         self.home.target_pose.header.frame_id = "map"
         self.home.target_pose.header.stamp = rospy.Time.now()
-        self.home.target_pose.pose = Pose(Point(0.0, 0.0, 0.0),
-                Quaternion(0.0, 0.0, 0.0, 1.0))
+        quat_tf = quaternion_from_euler(0.0, 0.0, 3.14159)
+        self.home.target_pose.pose = Pose(Point(self.origin_x, self.origin_y, 0.0),
+                Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
 
 class Gui:
     def __init__(self, master):
@@ -113,6 +114,9 @@ class Gui:
         self.cancel.grid(row=1, column=1, rowspan=6)
 
     def read_run_parameters(self):
+        self.origin_x = rospy.get_param("/fetch_noodle/origin/x")
+        self.origin_y = rospy.get_param("/fetch_noodle/origin/y")
+
         run_number = 0
         runs = {}
         while True:

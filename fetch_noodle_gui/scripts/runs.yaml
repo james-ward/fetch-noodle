@@ -1,11 +1,14 @@
 "fetch_noodle":
+  "origin":
+    "x": 9.0
+    "y": 3.3
   "runs":
     "0":
       "goal":
         "name": "centre"
-        "x": 9.5
-        "y": 0.0
-        "heading": 0.0
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
       "position_amplitude": 0.15
       "position_half_cycles": 3
       "speed_baseline": 1.0
@@ -15,9 +18,9 @@
     "1":
       "goal":
         "name": "left"
-        "x": 9.0
-        "y": 1.5
-        "heading": 0.8
+        "x": 1.5
+        "y": 1.8
+        "heading": -2.0
       "position_amplitude": 0.05
       "position_half_cycles": 2
       "speed_baseline": 1.0
@@ -27,9 +30,9 @@
     "2":
       "goal":
         "name": "right"
-        "x": 9.0
-        "y": -1.5
-        "heading": -0.8
+        "x": 1.5
+        "y": 4.8
+        "heading": 2.0
       "position_amplitude": 0.25
       "position_half_cycles": 4
       "speed_baseline": 1.0
