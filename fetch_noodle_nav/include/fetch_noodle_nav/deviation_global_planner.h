@@ -27,12 +27,12 @@ public:
                 const geometry_msgs::PoseStamped &goal,
                 std::vector<geometry_msgs::PoseStamped> &plan) override;
 
-private:
   static Point quadraticBezier(const Point &p0, const Point &p1,
                                const Point &p2, const double t);
   static std::pair<Point, Point> cubicBezier(const Point &p0, const Point &p1,
                                              const Point &p2, const Point &p3,
                                              const double t);
+private:
   void publishPlan(const std::vector<geometry_msgs::PoseStamped> &path);
 
   ros::NodeHandle private_nh_;
