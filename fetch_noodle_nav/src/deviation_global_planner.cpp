@@ -24,6 +24,8 @@ bool DeviationGlobalPlanner::makePlan(
 
   const double start_yaw = tf2::getYaw(start.pose.orientation);
   const double goal_yaw = tf2::getYaw(goal.pose.orientation);
+  ROS_INFO_STREAM("Starting yaw: " << start_yaw*180.0/3.14159);
+  ROS_INFO_STREAM("Goal yaw: " << goal_yaw*180.0/3.14159);
 
   // TODO Read deviation parameters from the parameter server
   double amplitude = 0;
@@ -63,7 +65,9 @@ bool DeviationGlobalPlanner::makePlan(
   const double steps = std::max(20, half_cycles * 10);
   for (double i = 1; i < steps; i++) {
     const double t = i / steps;
-    auto [p, gradient] = cubicBezier(p0, p1, p2, p3, t);
+    auto cb = cubicBezier(p0, p1, p2, p3, t);
+    auto p = cb.first;
+    auto gradient = cb.second;
     gradient.normalize();
     curve.push_back(std::make_pair(p, gradient));
     dist += (p - prev).norm();
@@ -72,7 +76,10 @@ bool DeviationGlobalPlanner::makePlan(
 
   double l = 0;
   prev = p0;
-  for (auto [p, gradient] : curve) {
+  for (auto cb : curve) {
+    auto p = cb.first;
+    auto gradient = cb.second;
+    gradient.normalize();
     l += (p - prev).norm();
     double deviation = amplitude * std::sin(3.14159 * l / dist * half_cycles);
     geometry_msgs::PoseStamped ps(start);
@@ -114,7 +121,8 @@ void DeviationGlobalPlanner::publishPlan(
 
 Point DeviationGlobalPlanner::quadraticBezier(const Point &p0, const Point &p1,
                                               const Point &p2, const double t) {
-  return p1 + std::pow(1 - t, 2) * (p0 - p1) + std::pow(t, 2) * (p2 - p1);
+  using std::pow;
+  return pow(1.-t,2)*p0 + 2.*(1.-t)*t*p1 + pow(t,2)*p2;
 }
 
 std::pair<Point, Point> DeviationGlobalPlanner::cubicBezier(const Point &p0,
