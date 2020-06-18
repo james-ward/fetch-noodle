@@ -11,7 +11,7 @@
         "heading": 3.14159
       "position_amplitude": 0.15
       "position_half_cycles": 3
-      "speed_baseline": 1.0
+      "speed_baseline": 0.5
       "speed_amplitude": 0.2
       "speed_period": 10.0
 
@@ -23,7 +23,7 @@
         "heading": -2.0
       "position_amplitude": 0.05
       "position_half_cycles": 2
-      "speed_baseline": 1.0
+      "speed_baseline": 0.5
       "speed_amplitude": 0.3
       "speed_period": 5.0
 
@@ -35,7 +35,7 @@
         "heading": 2.0
       "position_amplitude": 0.25
       "position_half_cycles": 4
-      "speed_baseline": 1.0
+      "speed_baseline": 0.5
       "speed_amplitude": 0.1
       "speed_period": 15.0
 
