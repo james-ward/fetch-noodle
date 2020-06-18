@@ -20,18 +20,29 @@ from tf.transformations import quaternion_from_euler
 
 class Actions:
     def __init__(self):
+        self.origin_x = rospy.get_param("/fetch_noodle/origin/x")
+        self.origin_y = rospy.get_param("/fetch_noodle/origin/y")
+        print "Origin set"
+
         self.arm = actionlib.SimpleActionClient("/arm_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
+        print "Arm client created"
         self.gripper = actionlib.SimpleActionClient("/gripper_controller/gripper_action", GripperCommandAction)
+        print "Gripper client created"
         self.move_base = actionlib.SimpleActionClient("/move_base", MoveBaseAction)
+        print "Move_base client created"
         self.arm.wait_for_server()
+        print "Arm client initialised"
         self.gripper.wait_for_server()
+        print "Gripper client initialised"
         self.move_base.wait_for_server()
+        print "Move_base client initialised"
 
         self.open_gripper = GripperCommandGoal()
         self.open_gripper.command.position = 1.0
         self.close_gripper = GripperCommandGoal()
         self.close_gripper.command.position = 0.0
         self.close_gripper.command.max_effort = 10.0  # TODO check on real robot how hard to close
+        print "Gripper goals created"
 
         self.move_group = MoveGroupInterface("arm", "base_link")
         self.arm_up_pose = PoseStamped()
@@ -40,6 +51,7 @@ class Actions:
         self.arm_down_pose = PoseStamped()
         self.arm_down_pose.header.frame_id = "base_link"
         self.arm_down_pose.pose = Pose(Point(0.4, 0.0, 0.5), Quaternion(0,0,0,1))
+        print "Arm goals created"
 
         self.home_backwards = MoveBaseGoal()
         self.home_backwards.target_pose.header.frame_id = "map"
@@ -47,6 +59,7 @@ class Actions:
         quat_tf = quaternion_from_euler(0.0, 0.0, 0.0)
         self.home_backwards.target_pose.pose = Pose(Point(self.origin_x, self.origin_y, 0.0),
                 Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
+        print "Home backwards created"
 
         self.home = MoveBaseGoal()
         self.home.target_pose.header.frame_id = "map"
@@ -54,6 +67,8 @@ class Actions:
         quat_tf = quaternion_from_euler(0.0, 0.0, 3.14159)
         self.home.target_pose.pose = Pose(Point(self.origin_x, self.origin_y, 0.0),
                 Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
+        print "Home created"
+        print "Goals initialised"
 
 class Gui:
     def __init__(self, master):
@@ -114,9 +129,6 @@ class Gui:
         self.cancel.grid(row=1, column=1, rowspan=6)
 
     def read_run_parameters(self):
-        self.origin_x = rospy.get_param("/fetch_noodle/origin/x")
-        self.origin_y = rospy.get_param("/fetch_noodle/origin/y")
-
         run_number = 0
         runs = {}
         while True:
@@ -176,7 +188,7 @@ class Gui:
         parameters = self.runs[self.tree.focus()]
         rospy.set_param("/move_base/DeviationGlobalPlanner/position/amplitude", parameters["position_amplitude"])
         rospy.set_param("/move_base/DeviationGlobalPlanner/position/half_cycles", parameters["position_half_cycles"])
-        rospy.set_param("/move_base/DeviationLocalPlanner/speed/baseline", parameters["speed_baseline"])
+        rospy.set_param("/move_base/DeviationLocalPlanner/speed/base_speed", parameters["speed_baseline"])
         rospy.set_param("/move_base/DeviationLocalPlanner/speed/amplitude", parameters["speed_amplitude"])
         rospy.set_param("/move_base/DeviationLocalPlanner/speed/period", parameters["speed_period"])
 
