@@ -130,10 +130,11 @@ std::pair<Point, Point> DeviationGlobalPlanner::cubicBezier(const Point &p0,
                                                             const Point &p2,
                                                             const Point &p3,
                                                             const double t) {
-  auto p = (1 - t) * quadraticBezier(p0, p1, p2, t) +
+  using std::pow;
+  Point p = (1. - t) * quadraticBezier(p0, p1, p2, t) +
            t * quadraticBezier(p1, p2, p3, t);
-  auto grad = 3 * std::pow(1 - t, 2) * (p1 - p0) + 6 * (1 - t) * t * (p2 - p1) +
-              3 * std::pow(t, 2) * (p3 - p2);
+  Point grad = 3. * pow(1. - t, 2) * (p1 - p0) + 6. * (1. - t) * t * (p2 - p1) +
+              3. * pow(t, 2) * (p3 - p2);
   return std::make_pair(p, grad);
 }
 
