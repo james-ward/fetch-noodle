@@ -1,4 +1,5 @@
 <launch>
+  <include file="$(find fetch_moveit_config)/launch/move_group.launch" />
   <include file="$(find fetch_navigation)/launch/fetch_nav.launch" >
     <arg name="map_file" value="$(find fetch_noodle_nav)/maps/facility.yaml" />
     <arg name="move_base_include" value="$(find fetch_noodle_nav)/launch/move_base.launch.xml" />

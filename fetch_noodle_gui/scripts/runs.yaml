@@ -1,6 +1,11 @@
+"move_base":
+  "DeviationLocalPlanner":
+    "look_ahead": 0.6
+    "goal_tolerance": 0.2
+
 "fetch_noodle":
   "origin":
-    "x": 9.0
+    "x": 12.0
     "y": 3.3
   "runs":
     "0":
@@ -9,10 +14,10 @@
         "x": 1.5
         "y": 3.3
         "heading": 3.14159
-      "position_amplitude": 0.15
-      "position_half_cycles": 3
-      "speed_baseline": 0.5
-      "speed_amplitude": 0.2
+      "position_amplitude": 0.2
+      "position_half_cycles": 7
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.0
       "speed_period": 10.0
 
     "1":
@@ -20,11 +25,11 @@
         "name": "left"
         "x": 1.5
         "y": 1.8
-        "heading": -2.0
-      "position_amplitude": 0.05
+        "heading": -2.2
+      "position_amplitude": 0.0
       "position_half_cycles": 2
-      "speed_baseline": 0.5
-      "speed_amplitude": 0.3
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.4
       "speed_period": 5.0
 
     "2":
@@ -32,11 +37,95 @@
         "name": "right"
         "x": 1.5
         "y": 4.8
-        "heading": 2.0
-      "position_amplitude": 0.25
-      "position_half_cycles": 4
-      "speed_baseline": 0.5
-      "speed_amplitude": 0.1
+        "heading": 2.2
+      "position_amplitude": 0.2
+      "position_half_cycles": 5
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.4
+      "speed_period": 5.0
+
+    "3":
+      "goal":
+        "name": "centre"
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
+      "position_amplitude": 0.3
+      "position_half_cycles": 7
+      "speed_baseline": 1.0
+      "speed_amplitude": 0.0
+      "speed_period": 10.0
+
+    "4":
+      "goal":
+        "name": "centre"
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
+      "position_amplitude": 0.1
+      "position_half_cycles": 9
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.0
+      "speed_period": 10.0
+
+    "5":
+      "goal":
+        "name": "centre"
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
+      "position_amplitude": 0.0
+      "position_half_cycles": 9
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.5
+      "speed_period": 5.0
+
+    "6":
+      "goal":
+        "name": "centre"
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
+      "position_amplitude": 0.0
+      "position_half_cycles": 9
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.5
+      "speed_period": 10.0
+
+    "7":
+      "goal":
+        "name": "centre"
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
+      "position_amplitude": 0.0
+      "position_half_cycles": 9
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.5
       "speed_period": 15.0
+
+    "8":
+      "goal":
+        "name": "centre"
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
+      "position_amplitude": 0.2
+      "position_half_cycles": 7
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.5
+      "speed_period": 10.0
+
+    "9":
+      "goal":
+        "name": "centre"
+        "x": 1.5
+        "y": 3.3
+        "heading": 3.14159
+      "position_amplitude": 0.1
+      "position_half_cycles": 11
+      "speed_baseline": 1.2
+      "speed_amplitude": 0.5
+      "speed_period": 10.0
 
 

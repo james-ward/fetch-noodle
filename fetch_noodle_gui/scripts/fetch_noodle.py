@@ -39,18 +39,26 @@ class Actions:
 
         self.open_gripper = GripperCommandGoal()
         self.open_gripper.command.position = 1.0
+        self.open_gripper.command.max_effort = 100.0
         self.close_gripper = GripperCommandGoal()
         self.close_gripper.command.position = 0.0
-        self.close_gripper.command.max_effort = 10.0  # TODO check on real robot how hard to close
+        self.close_gripper.command.max_effort = 100.0
         print "Gripper goals created"
 
         self.move_group = MoveGroupInterface("arm", "base_link")
+        #self.move_group = MoveGroupInterface("arm_with_torso", "base_link")
         self.arm_up_pose = PoseStamped()
         self.arm_up_pose.header.frame_id = "base_link"
-        self.arm_up_pose.pose = Pose(Point(0.4, 0.0, 0.6), Quaternion(0.5,-0.5,0.5,0.5))
+        self.arm_up_pose.pose = Pose(Point(0.38, -0.07, 0.75), Quaternion(0.563, -0.432, 0.338, 0.618))
+        #self.arm_up_pose.pose = Pose(Point(0.38, -0.07, 0.95), Quaternion(0.563, -0.432, 0.338, 0.618))
+        #self.arm_up_pose.pose = Pose(Point(0.4, 0.0, 0.6), Quaternion(0.5,-0.5,0.5,0.5))
+        #self.arm_up_pose.pose = Pose(Point(0.38, -0.07, 0.95), Quaternion(0.5, -0.5, 0.5, 0.5))
         self.arm_down_pose = PoseStamped()
         self.arm_down_pose.header.frame_id = "base_link"
         self.arm_down_pose.pose = Pose(Point(0.4, 0.0, 0.5), Quaternion(0,0,0,1))
+        self.arm_home_pose = PoseStamped()
+        self.arm_home_pose.header.frame_id = "base_link"
+        self.arm_home_pose.pose = Pose(Point(0.055, -0.140, 0.624), Quaternion(0.460, -0.503, 0.512, 0.523))
         print "Arm goals created"
 
         self.home_backwards = MoveBaseGoal()
@@ -162,12 +170,12 @@ class Gui:
         self.get_noodle["state"] = DISABLED
         self.grab["state"] = DISABLED
         self.run["state"] = DISABLED
+        # Play the request
+        self.sound.say("Please place the end of the pool noodle in my hand.")
         self.actions.arm_up_pose.header.stamp = rospy.Time.now()
         self.actions.move_group.moveToPose(self.actions.arm_up_pose, "wrist_roll_link")
         self.actions.gripper.send_goal_and_wait(self.actions.open_gripper)
 
-        # Play the request
-        self.sound.say("Please place the end of the pool noodle in my hand.")
         self.grab["state"] = NORMAL
 
     def grab_cmd(self):
@@ -229,13 +237,18 @@ class Gui:
         rospy.set_param("/move_base/DeviationGlobalPlanner/position/amplitude", 0.0)
         # TODO set the return speed. For now, use the previous baseline
         rospy.set_param("/move_base/DeviationLocalPlanner/speed/amplitude", 0.0)
+        
+	# Arm to home position
+	self.actions.arm_home_pose.header.stamp = rospy.Time.now()
+        self.actions.move_group.moveToPose(self.actions.arm_home_pose, "wrist_roll_link")
 
         # Face back towards start
         goal = MoveBaseGoal()
         goal.target_pose.header.frame_id = "map"
         goal.target_pose.header.stamp = rospy.Time.now()
         # Get current position (might not be goal if we abort)
-        bearing = math.atan2(-self.current_pose.position.y, -self.current_pose.position.x)
+        bearing = math.atan2(self.actions.origin_y-self.current_pose.position.y,
+                self.actions.origin_x-self.current_pose.position.x)
         quat_tf = quaternion_from_euler(0.0, 0.0, bearing)
         goal.target_pose.pose = Pose(self.current_pose.position,
                 Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
