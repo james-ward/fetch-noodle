@@ -6,6 +6,7 @@ import ttk
 from collections import OrderedDict
 
 import math
+import time
 
 import rospy
 import actionlib
@@ -190,6 +191,7 @@ class Gui:
         self.run["state"] = DISABLED
         self.get_noodle["state"] = DISABLED
         self.sound.say("Lets go!")
+	time.sleep(2)
         self.cancel["state"] = NORMAL
         # Run the nav stack
         # First read the parameters for this run and set them on the parameter server
@@ -252,10 +254,11 @@ class Gui:
         quat_tf = quaternion_from_euler(0.0, 0.0, bearing)
         goal.target_pose.pose = Pose(self.current_pose.position,
                 Quaternion(quat_tf[0], quat_tf[1], quat_tf[2], quat_tf[3]))
-        self.actions.move_base.send_goal_and_wait(goal)
-
         # Ask subject to follow
         self.sound.say("Please follow me back to the starting position.")
+	time.sleep(2)
+
+        self.actions.move_base.send_goal_and_wait(goal)
 
         def spot_turn(status, result):
             if status != GoalStatus.SUCCEEDED:
